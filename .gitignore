@@ -1,0 +1,5 @@
+node_modules
+downloadedUrls
+medium*
+*.xml
+!wp-skeleton.xml

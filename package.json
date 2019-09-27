@@ -1,0 +1,27 @@
+{
+  "name": "tensult-medium-export-to-wordpress",
+  "version": "0.0.1",
+  "description": "Exports medium blogs to wordpress (wp) xml format",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Medium",
+    "Wordpress",
+    "blogs",
+    "Export",
+    "Import",
+    "Migration"
+  ],
+  "author": "dev@tensult.com",
+  "license": "MIT",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.3",
+    "cli": "^1.0.1",
+    "moment": "^2.24.0",
+    "superagent": "^5.1.0",
+    "uuid": "^3.3.3",
+    "xml2js": "^0.4.22"
+  }
+}
