@@ -87,7 +87,7 @@ async function fetchUrl(url, shouldRefetch) {
     let urlContent = '';
     const urlFileName = path.join(urlCacheDir, urlFileId);
     if (!shouldRefetch && fs.existsSync(urlFileName)) {
-        console.log("Fetching url from cache", url);
+        console.log("Fetching url from cache", url, "with cacheKey", urlFileName);
         urlContent = fs.readFileSync(urlFileName, { encoding: 'utf-8' });
     } else {
         console.log("Fetching url", url);
@@ -173,26 +173,39 @@ async function handleFigures(contentObj) {
             iframeUrls.push(contentObj(elm).attr('src'));
         });
         const iframeHtmls = await fetchUrls(iframeUrls);
-        contentObj('figure div iframe').each((index, elm) => {
-            const iframeObj = cheerio.load(iframeHtmls[index]);
+        const gistUrls = [];
+        for(let iframeHtml of iframeHtmls) {
+            const iframeObj = cheerio.load(iframeHtml);
             const gistUrl = iframeObj('script[src*="gist.github"]').attr('src');
-            const gistFile = iframeObj('title').text().replace(' – Medium', '');
-            const figureObj = contentObj(elm).closest('figure');
-            figureObj.html(
-                `<div class="oembed-gist">
-                <script src="${gistUrl}?file=${gistFile}">
-                </script>
-                <noscript>
-                View the code on <a href="${gistUrl.replace('.js', '')}">Gist</a>.
-                </noscript></div>`);
+            gistUrls.push(gistUrl);
+        }
+        const gistHtmls = await fetchUrls(gistUrls);
+        contentObj('figure div iframe').each((index, elm) => {
+            const matchedUrl = gistHtmls[index].match(/https:\/\/gist\.github\.com\/[^"]+\/raw\/[^\\]+/g);
+            if(matchedUrl)  {
+                const gistUrl = matchedUrl[0].replace(/\/raw\/[^\/]+\//, "?file=");
+                const figureObj = contentObj(elm).closest('figure');
+                figureObj.html(
+                    `<div class="oembed-gist">
+                    <script src="${gistUrl}">
+                    </script>
+                    <noscript>
+                    View the code on <a href="${gistUrl.split('?')[0]}">Gist</a>.
+                    </noscript></div>`);
+            }
+            
         });
     }
 }
 
 async function preparePostContent(postContainer) {
     const $ = postContainer;
-    const contentObj = cheerio.load($("article p").first().parent().html());
-    contentObj('div').first().remove();
+    if($("article p").first().prev()[0].name == 'figure') {
+        $("article figure").first().prevAll().remove();
+    } else {
+        $("article p").first().prevAll().remove();
+    }
+    const contentObj = cheerio.load($("article p").first().parent().html());    
     removeClassForAllElements(contentObj, contentObj('body'));
     await handleFigures(contentObj);
     return replaceHTags(contentObj('body').html());
