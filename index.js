@@ -17,7 +17,7 @@ const cliArgs = cli.parse({
     mediumPublicationHtmlFile: ['h', 'HTML source of https://medium.com/<your-publication>/stories/published or https://medium.com/me/stories/public', 'file'],
     mediumPublicationUrlsFile: ['u', 'File containing all urls of https://medium.com/<your-publication>', 'file'],
     mediumPublicationUrls: ['U', 'Comma separated urls of https://medium.com/<your-publication>', 'String'],
-    outWPXMLFileName: ['o', 'Generate Wordpress XML file name', 'string', 'wp-posts.xml']
+    outWPXMLFileName: ['o', 'Generated Wordpress XML file name', 'string', 'wp-posts.xml']
 });
 
 if (!cliArgs.mediumPublicationHtmlFile &&
