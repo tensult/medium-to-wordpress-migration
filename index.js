@@ -197,7 +197,7 @@ async function handleFigures(contentObj) {
         });
         const iframeHtmls = await fetchUrls(iframeUrls);
         const gistUrls = [];
-        for(let iframeHtml of iframeHtmls) {
+        for (let iframeHtml of iframeHtmls) {
             const iframeObj = cheerio.load(iframeHtml);
             const gistUrl = iframeObj('script[src*="gist.github"]').attr('src');
             gistUrls.push(gistUrl);
@@ -205,7 +205,7 @@ async function handleFigures(contentObj) {
         const gistHtmls = await fetchUrls(gistUrls);
         contentObj('figure div iframe').each((index, elm) => {
             const matchedUrl = gistHtmls[index].match(/https:\/\/gist\.github\.com\/[^"]+\/raw\/[^\\]+/g);
-            if(matchedUrl)  {
+            if (matchedUrl) {
                 const gistUrl = matchedUrl[0].replace(/\/raw\/[^\/]+\//, "?file=");
                 const figureObj = contentObj(elm).closest('figure');
                 figureObj.html(
@@ -216,19 +216,19 @@ async function handleFigures(contentObj) {
                     View the code on <a href="${gistUrl.split('?')[0]}">Gist</a>.
                     </noscript></div>`);
             }
-            
+
         });
     }
 }
 
 async function preparePostContent(postContainer) {
     const $ = postContainer;
-    if($("article p").first().prev()[0].name == 'figure') {
+    if ($("article p").first().prev()[0].name == 'figure') {
         $("article figure").first().prevAll().remove();
     } else {
         $("article p").first().prevAll().remove();
     }
-    const contentObj = cheerio.load($("article p").first().parent().html());    
+    const contentObj = cheerio.load($("article p").first().parent().html());
     removeClassForAllElements(contentObj, contentObj('body'));
     await handleFigures(contentObj);
     return replaceHTags(contentObj('body').html());
@@ -263,7 +263,7 @@ async function generateWPXML() {
     const wpJson = await getSampleWPJSON();
     const items = await prepareWPPostsJson(getPostUrls());
     wpJson.rss.channel[0].item = items;
-    writeWPXML(wpJson, "wp-posts.xml");
+    writeWPXML(wpJson, cliArgs.outWPXMLFileName);
 }
 
 generateWPXML();
