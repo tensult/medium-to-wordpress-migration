@@ -14,21 +14,44 @@ const xmlBuilder = new xml2js.Builder({ cdata: true });
 const urlCacheDir = 'downloadedUrls/';
 
 const cliArgs = cli.parse({
-    mediumPublicationHtmlFile: ['h', 'HTML source of https://medium.com/<your-publication>/stories/published', 'file'],
+    mediumPublicationHtmlFile: ['h', 'HTML source of https://medium.com/<your-publication>/stories/published or https://medium.com/me/stories/public', 'file'],
     mediumPublicationUrlsFile: ['u', 'File containing all urls of https://medium.com/<your-publication>', 'file'],
     mediumPublicationUrls: ['U', 'Comma separated urls of https://medium.com/<your-publication>', 'String'],
     outWPXMLFileName: ['o', 'Generate Wordpress XML file name', 'string', 'wp-posts.xml']
 });
 
+if (!cliArgs.mediumPublicationHtmlFile &&
+    !cliArgs.mediumPublicationUrlsFile &&
+    !cliArgs.mediumPublicationUrls
+) {
+    cli.getUsage();
+}
+
+function makeMediumUrl(url) {
+    url = url.split('?')[0];
+    if (!url.startsWith('https://medium.com')) {
+        url = 'https://medium.com/' + url;
+        url = url.replace("medium.com//", "medium.com/");
+    }
+    return url;
+}
+
 function getPostsUrlsFromHtmlFile(htmlFile) {
     const mediumHtml = fs.readFileSync(htmlFile);
     const $ = cheerio.load(mediumHtml);
-    const postUrls = [];
-    $('div.postItem').each((index, elm) => {
-        let url = $(elm).find("h3.post-title a").attr('href').split('?')[0];
-        postUrls.push(url);
+    const postUrls = new Set();
+    // For https://medium.com/me/stories/public
+    $('h3 a[href*="your_stories_page"]').each((index, elm) => {
+        postUrls.add(makeMediumUrl($(elm).attr('href')));
     });
-    return postUrls;
+
+    // For https://medium.com/<your-publication>/stories/published
+    $('h3 a[href*="collection_detail"]').each((index, elm) => {
+        postUrls.add(makeMediumUrl($(elm).attr('href')));
+    });
+    console.log(postUrls);
+    process.exit();
+    return Array.from(postUrls);
 }
 
 function getPostsUrlsFromUrlsFile(urlsFile) {

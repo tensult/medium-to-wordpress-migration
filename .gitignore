@@ -1,5 +1,5 @@
 node_modules
-downloadedUrls
+downloadedUrls*
 medium*
 *.xml
 !wp-skeleton.xml
