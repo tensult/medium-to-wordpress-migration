@@ -14,7 +14,7 @@ const xmlBuilder = new xml2js.Builder({ cdata: true });
 const urlCacheDir = 'downloadedUrls/';
 
 const cliArgs = cli.parse({
-    mediumPublicationHtmlFile: ['h', 'HTML source of https://medium.com/<your-publication>/stories/published or https://medium.com/me/stories/public', 'file'],
+    mediumPublicationHtmlFile: ['h', 'HTML source of https://medium.com/<your-publication>/latest, https://medium.com/<your-publication>/stories/published or https://medium.com/me/stories/public', 'file'],
     mediumPublicationUrlsFile: ['u', 'File containing all urls of https://medium.com/<your-publication>', 'file'],
     mediumPublicationUrls: ['U', 'Comma separated urls of https://medium.com/<your-publication>', 'String'],
     outWPXMLFileName: ['o', 'Generated Wordpress XML file name', 'string', 'wp-posts.xml']
@@ -41,16 +41,22 @@ function getPostsUrlsFromHtmlFile(htmlFile) {
     const $ = cheerio.load(mediumHtml);
     const postUrls = new Set();
     // For https://medium.com/me/stories/public
+    // (Make sure to scroll till the end)
     $('h3 a[href*="your_stories_page"]').each((index, elm) => {
         postUrls.add(makeMediumUrl($(elm).attr('href')));
     });
 
-    // For https://medium.com/<your-publication>/stories/published
+    // For https://medium.com/<your-publication>/stories/published 
+    // (Make sure to scroll till the end)
     $('h3 a[href*="collection_detail"]').each((index, elm) => {
         postUrls.add(makeMediumUrl($(elm).attr('href')));
     });
-    console.log(postUrls);
-    process.exit();
+
+    // For https://medium.com/<your-publication>/latest
+    // (Make sure to scroll till the end)
+    $('div.postArticle-content a[data-post-id]').each((index, elm) => {
+        postUrls.add(makeMediumUrl($(elm).attr('href')));
+    });
     return Array.from(postUrls);
 }
 
