@@ -111,6 +111,9 @@ function makeArray(objects) {
 }
 
 async function fetchUrl(url, shouldRefetch) {
+    if (!url) {
+        return "";
+    }
     const urlFileId = uuid5(url, uuid5.URL) + ".html";
     fs.mkdirSync(urlCacheDir, { recursive: true });
     let urlContent = '';
@@ -187,52 +190,61 @@ function prepareCategory(postContainer) {
     return category;
 }
 
-async function handleFigures(contentObj) {
-    if (contentObj('figure div').length > 0) {
-        contentObj('figure noscript').each((index, elm) => {
-            const imgHtml = contentObj(elm).html();
-            const figObj = contentObj(elm).closest("figure");
-            const figCaption = contentObj(figObj).children('figcaption');
-            figObj.html(imgHtml);
-            contentObj(figObj).children('img').removeAttr('class');
-            figObj.append(figCaption);
-        });
-        const iframeUrls = []
-        contentObj('figure div iframe').each((index, elm) => {
-            iframeUrls.push(contentObj(elm).attr('src'));
-        });
-        const iframeHtmls = await fetchUrls(iframeUrls);
-        const gistUrls = [];
-        for (let iframeHtml of iframeHtmls) {
-            const iframeObj = cheerio.load(iframeHtml);
-            const gistUrl = iframeObj('script[src*="gist.github"]').attr('src');
-            gistUrls.push(gistUrl);
-        }
-        const gistHtmls = await fetchUrls(gistUrls);
-        contentObj('figure div iframe').each((index, elm) => {
-            const matchedUrl = gistHtmls[index].match(/https:\/\/gist\.github\.com\/[^"]+\/raw\/[^\\]+/g);
-            if (matchedUrl) {
-                const gistUrl = matchedUrl[0].replace(/\/raw\/[^\/]+\//, "?file=");
-                const figureObj = contentObj(elm).closest('figure');
-                figureObj.html(
-                    `<div class="oembed-gist">
+function handleImages(contentObj) {
+    contentObj('figure noscript').each((index, elm) => {
+        const imgHtml = contentObj(elm).html();
+        const figObj = contentObj(elm).closest("figure");
+        const figCaption = contentObj(figObj).children('figcaption');
+        figObj.html(imgHtml);
+        contentObj(figObj).children('img').removeAttr('class');
+        figObj.append(figCaption);
+    });
+}
+
+async function handleIframes(contentObj) {
+    const iframeUrls = []
+    contentObj('figure div iframe').each((index, elm) => {
+        iframeUrls.push(contentObj(elm).attr('src'));
+    });
+
+    const iframeHtmls = await fetchUrls(iframeUrls);
+    const gistUrls = [];
+    for (let iframeHtml of iframeHtmls) {
+        const iframeObj = cheerio.load(iframeHtml);
+        const gistUrl = iframeObj('script[src*="gist.github"]').attr('src');
+        gistUrls.push(gistUrl);
+    }
+    const gistHtmls = await fetchUrls(gistUrls);
+    contentObj('figure div iframe').each((index, elm) => {
+        const matchedUrl = gistHtmls[index].match(/https:\/\/gist\.github\.com\/[^"]+\/raw\/[^\\]+/g);
+        if (matchedUrl) {
+            const gistUrl = matchedUrl[0].replace(/\/raw\/[^\/]+\//, ".js?file=");
+            const figureObj = contentObj(elm).closest('figure');
+            figureObj.html(
+                `<div class="oembed-gist">
                     <script src="${gistUrl}">
                     </script>
                     <noscript>
-                    View the code on <a href="${gistUrl.split('?')[0]}">Gist</a>.
+                    View the code on <a href="${gistUrl.split('.js?')[0]}">Gist</a>.
                     </noscript></div>`);
-            }
+        }
+    });
+}
 
-        });
+async function handleFigures(contentObj) {
+    if (contentObj('figure div').length > 0) {
+        handleImages(contentObj);
+        await handleIframes(contentObj);
     }
 }
 
 async function preparePostContent(postContainer) {
     const $ = postContainer;
-    if ($("article p").first().prev()[0].name == 'figure') {
+    const firstPara = $("article p").first()
+    if (firstPara.prev().length && firstPara.prev()[0].name == 'figure') {
         $("article figure").first().prevAll().remove();
     } else {
-        $("article p").first().prevAll().remove();
+        firstPara.prevAll().remove();
     }
     const contentObj = cheerio.load($("article p").first().parent().html());
     removeClassForAllElements(contentObj, contentObj('body'));
