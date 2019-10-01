@@ -18,7 +18,12 @@ npm install
 **Extract using URLs as command line argument**
 * `node . -U "url1,url2"`
 
-Extract using HTML of (https://medium.com/your-publication/stories/published or https://medium.com/me/stories/public)
+Extract using HTML of (https://medium.com/your-publication/latest, https://medium.com/your-publication/stories/published or https://medium.com/me/stories/public)
+* Keep scroll till the end and then follow the below instructions
+* ![Open Inspector in the browser](https://user-images.githubusercontent.com/33080863/65932401-2bbc5400-e42b-11e9-9589-82ca21e4aae0.png) (This is for Chrome and might vary for your browser)
+* ![Select root HTML tag](https://user-images.githubusercontent.com/33080863/65932555-cddc3c00-e42b-11e9-92ed-3b5b61998189.png)
+* ![Copy HTML content](https://user-images.githubusercontent.com/33080863/65932614-0a0f9c80-e42c-11e9-98e3-9c79d3d261c7.png)
+* Save as <your-medium-listing.html> file.
 * `node . -h <your-medium-listing.html>`
 
 ## Features
