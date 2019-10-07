@@ -19,7 +19,9 @@
   "dependencies": {
     "cheerio": "^1.0.0-rc.3",
     "cli": "^1.0.1",
+    "html-entities": "^1.2.1",
     "moment": "^2.24.0",
+    "phantom": "^6.3.0",
     "superagent": "^5.1.0",
     "uuid": "^3.3.3",
     "xml2js": "^0.4.22"

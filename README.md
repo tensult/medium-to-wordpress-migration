@@ -18,7 +18,10 @@ npm install
 **Extract using URLs as command line argument**
 * `node . -U "url1,url2"`
 
-Extract using HTML of (https://medium.com/your-publication/latest, https://medium.com/your-publication/stories/published or https://medium.com/me/stories/public)
+**Extract using Publication URL (https://medium.com/your-publication/latest)**
+* `node . -p https://medium.com/your-publication/latest`
+* 
+**Extract using HTML of (https://medium.com/your-publication/latest, https://medium.com/your-publication/stories/published or https://medium.com/me/stories/public)**
 * Keep scroll till the end and then follow the below instructions
 ![Open Inspector in the browser](https://user-images.githubusercontent.com/33080863/65932401-2bbc5400-e42b-11e9-9589-82ca21e4aae0.png) (This is for Chrome and might vary for your browser)
 
