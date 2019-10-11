@@ -292,19 +292,34 @@ async function handleFigures(contentObj) {
         await handleIframes(contentObj);
     }
 }
-
-async function preparePostContent(postContainer) {
-    const $ = postContainer;
-    const firstPara = $("article p").first()
-    if (firstPara.prev().length && firstPara.prev()[0].name == 'figure') {
-        $("article figure").first().prevAll().remove();
+async function prepareSectionContent(sectionContainer) {
+    const $ = sectionContainer;
+    const firstParaIndex = $.find("p").index();
+    const firstFigureIndex = $.find("figure").index();
+    if (firstFigureIndex !== -1 && firstParaIndex > firstFigureIndex) {
+        $.find("figure").first().prevAll().remove();
     } else {
-        firstPara.prevAll().remove();
+        $.find("p").first().prevAll().remove();
     }
-    const contentObj = cheerio.load($("article p").first().parent().html());
+
+    const contentObj = cheerio.load($.find("p").first().parent().html());
     removeClassForAllElements(contentObj, contentObj('body'));
     await handleFigures(contentObj);
     return replaceHTags(contentObj('body').html());
+}
+
+async function preparePostContent(postContainer) {
+    const $ = postContainer;
+    const sections = $('article div').children('section');
+    const sectionContents = [];
+    for (let i = 0; i < sections.length; i++) {
+        const elm = sections.get(i);
+        sectionContents.push(await prepareSectionContent($(elm)));
+    }
+    const htmlContent = sectionContents
+        .join('<hr class="wp-block-separator"/>')
+        .replace(/\s+/g, " ");
+    return htmlContent;
 }
 
 async function prepareWPPostJson(postDataHtml) {
