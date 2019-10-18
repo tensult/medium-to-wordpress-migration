@@ -19,6 +19,7 @@ const cliArgs = cli.parse({
     mediumPublicationUrl: ['p', 'https://medium.com/<your-publication>/latest', 'string'],
     mediumPublicationUrlsFile: ['u', 'File containing all urls of https://medium.com/<your-publication>', 'file'],
     mediumPublicationUrls: ['U', 'Comma separated urls of https://medium.com/<your-publication>', 'String'],
+    refetchPublicationUrl: ['r', 'Should refetch PublicationUrl', 'boolean', false],
     outWPXMLFileName: ['o', 'Generated Wordpress XML file name', 'string', 'wp-posts.xml']
 });
 
@@ -104,7 +105,7 @@ function getPostsUrlsFromHtmlFile(htmlFile) {
 }
 
 async function getPostsUrlsFromPublicationUrl(publicationUrl) {
-    const pageData = await fetchUrl(publicationUrl, { scrollPage: true });
+    const pageData = await fetchUrl(publicationUrl, { scrollPage: true, refetch: cliArgs.refetchPublicationUrl });
     return getPostUrlsFromHtml(pageData);
 }
 
@@ -242,6 +243,16 @@ function prepareCategory(postContainer) {
     return category;
 }
 
+function handleUrls(contentObj, urlsMapping) {
+    contentObj('a').each((index, elm) => {
+        const href = contentObj(elm).attr("href");
+        const urlRelative = href.split("?")[0];
+        if (urlsMapping[urlRelative]) {
+            contentObj(elm).attr("href", urlsMapping[urlRelative]);
+        }
+    });
+}
+
 function handleImages(contentObj) {
     contentObj('figure noscript').each((index, elm) => {
         let imgHtml = contentObj(elm).html();
@@ -292,7 +303,7 @@ async function handleFigures(contentObj) {
         await handleIframes(contentObj);
     }
 }
-async function prepareSectionContent(sectionContainer) {
+async function prepareSectionContent(sectionContainer, urlsMapping) {
     const $ = sectionContainer;
     const firstParaIndex = $.find("p").index();
     const firstFigureIndex = $.find("figure").index();
@@ -304,17 +315,18 @@ async function prepareSectionContent(sectionContainer) {
 
     const contentObj = cheerio.load($.find("p").first().parent().html());
     removeClassForAllElements(contentObj, contentObj('body'));
+    handleUrls(contentObj, urlsMapping);
     await handleFigures(contentObj);
     return replaceHTags(contentObj('body').html());
 }
 
-async function preparePostContent(postContainer) {
+async function preparePostContent(postContainer, urlsMapping) {
     const $ = postContainer;
     const sections = $('article div').children('section');
     const sectionContents = [];
     for (let i = 0; i < sections.length; i++) {
         const elm = sections.get(i);
-        sectionContents.push(await prepareSectionContent($(elm)));
+        sectionContents.push(await prepareSectionContent($(elm), urlsMapping));
     }
     const htmlContent = sectionContents
         .join('<hr class="wp-block-separator"/>')
@@ -322,14 +334,14 @@ async function preparePostContent(postContainer) {
     return htmlContent;
 }
 
-async function prepareWPPostJson(postDataHtml) {
+async function prepareWPPostJson(postDataHtml, urlsMapping) {
     const postJson = {};
     const $ = cheerio.load(postDataHtml);
     postJson.title = [$("title").text().replace('- Tensult Blogs - Medium', '')];
     const pubDateStr = $('meta[property="article:published_time"]').attr('content');
     postJson.pubDate = [getDateInFormat(pubDateStr, "ddd, DD MMM YYYY HH:mm:ss ZZ")]
     postJson['dc:creator'] = [$('meta[name="author"]').attr('content')];
-    postJson['content:encoded'] = [await preparePostContent($)];
+    postJson['content:encoded'] = [await preparePostContent($, urlsMapping)];
     postJson['excerpt:encoded'] = [''];
     postJson['wp:post_date_gmt'] = [getDateInFormat(pubDateStr, "YYYY-MM-DD HH:mm:ss")];
     postJson['wp:status'] = ['publish'];
@@ -339,10 +351,23 @@ async function prepareWPPostJson(postDataHtml) {
 }
 
 async function prepareWPPostsJson(postUrls) {
+    const urlsMapping = {};
     const posts = [];
     for (let postUrl of postUrls) {
         const postDataHtml = await fetchUrl(postUrl);
-        posts.push(await prepareWPPostJson(postDataHtml));
+        const $ = cheerio.load(postDataHtml);
+        const title = $("title").text().replace('- Tensult Blogs - Medium', '');
+        const newUrl = "/" + title.trim().toLowerCase()
+            .replace(/\s+/g, '-')
+            .replace(/[^-0-9a-z]/g, '');
+        const postUrlRelative = postUrl.replace("https://medium.com", '')
+            .replace("https://www.medium.com", '');
+        urlsMapping[postUrlRelative] = newUrl;
+    }
+
+    for (let postUrl of postUrls) {
+        const postDataHtml = await fetchUrl(postUrl);
+        posts.push(await prepareWPPostJson(postDataHtml, urlsMapping));
     }
     return posts;
 }
