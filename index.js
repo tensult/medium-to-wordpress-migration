@@ -216,14 +216,14 @@ function stringReplaceAt(text, index, replacement) {
 }
 
 function replaceHTags(content) {
-    const hTagRegExp = new RegExp(/h(\d)\>/g);
-    let newContent = content;
-    let hTagRegExpResult = hTagRegExp.exec(content);
-    while (hTagRegExpResult && hTagRegExpResult.index < content.length) {
-        newContent = stringReplaceAt(newContent, hTagRegExpResult.index + 1, parseInt(hTagRegExpResult[1]) + 2);
-        hTagRegExpResult = hTagRegExp.exec(content);
+    if (!content) {
+        return "";
     }
-    return newContent;
+    content = content.replace(/h3\>/g, "h4>");
+    content = content.replace(/h2\>/g, "h3>");
+    content = content.replace(/h1\>/g, "h2>");
+
+    return content;
 }
 
 function prepareCategory(postContainer) {
