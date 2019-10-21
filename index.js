@@ -211,11 +211,19 @@ function removeClassForAllElements(cheerioContainer, element) {
     });
 }
 
+function stringReplaceAt(text, index, replacement) {
+    return text.substr(0, index) + replacement + text.substr(index + replacement.length);
+}
+
 function replaceHTags(content) {
-    return content.replace(/<h1/g, '<h3')
-        .replace(/h1>/g, 'h3>')
-        .replace(/h2>/g, 'h4>')
-        .replace(/<h2/g, '<h4');
+    const hTagRegExp = new RegExp(/h(\d)\>/g);
+    let newContent = content;
+    let hTagRegExpResult = hTagRegExp.exec(content);
+    while (hTagRegExpResult && hTagRegExpResult.index < content.length) {
+        newContent = stringReplaceAt(newContent, hTagRegExpResult.index + 1, parseInt(hTagRegExpResult[1]) + 2);
+        hTagRegExpResult = hTagRegExp.exec(content);
+    }
+    return newContent;
 }
 
 function prepareCategory(postContainer) {
@@ -303,6 +311,12 @@ async function handleFigures(contentObj) {
         await handleIframes(contentObj);
     }
 }
+function handleLineBreaks(contentObj) {
+    contentObj('p').each((index, elm) => {
+        const pHtml = contentObj(elm).html();
+        contentObj(elm).html(pHtml.replace(/\<\/?br\>/g, " "));
+    });
+}
 
 function handleEmbeddedLinks(contentObj) {
     if (contentObj('a section').length > 0) {
@@ -326,6 +340,7 @@ async function prepareSectionContent(sectionContainer, urlsMapping) {
     removeClassForAllElements(contentObj, contentObj('body'));
     handleUrls(contentObj, urlsMapping);
     handleEmbeddedLinks(contentObj);
+    handleLineBreaks(contentObj);
     await handleFigures(contentObj);
     return replaceHTags(contentObj('body').html());
 }
