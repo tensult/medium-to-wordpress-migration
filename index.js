@@ -303,6 +303,15 @@ async function handleFigures(contentObj) {
         await handleIframes(contentObj);
     }
 }
+
+function handleEmbeddedLinks(contentObj) {
+    if (contentObj('a section').length > 0) {
+        contentObj('a section').each((index, elm) => {
+            contentObj(elm).find("h4").remove();
+            contentObj(elm).closest("div").addClass("embedded-link");
+        });
+    }
+}
 async function prepareSectionContent(sectionContainer, urlsMapping) {
     const $ = sectionContainer;
     const firstParaIndex = $.find("p").index();
@@ -316,6 +325,7 @@ async function prepareSectionContent(sectionContainer, urlsMapping) {
     const contentObj = cheerio.load($.find("p").first().parent().html());
     removeClassForAllElements(contentObj, contentObj('body'));
     handleUrls(contentObj, urlsMapping);
+    handleEmbeddedLinks(contentObj);
     await handleFigures(contentObj);
     return replaceHTags(contentObj('body').html());
 }
