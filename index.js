@@ -363,12 +363,14 @@ async function prepareWPPostJson(postDataHtml, urlsMapping) {
     const postJson = {};
     const $ = cheerio.load(postDataHtml);
     postJson.title = [$("title").text().replace('- Tensult Blogs - Medium', '')];
-    const pubDateStr = $('meta[property="article:published_time"]').attr('content');
-    postJson.pubDate = [getDateInFormat(pubDateStr, "ddd, DD MMM YYYY HH:mm:ss ZZ")]
+    const pubDateMatch = postDataHtml.match(/"datePublished"\s*:\s*"([^"]+)"/);
+    if (pubDateMatch) {
+        postJson.pubDate = [getDateInFormat(pubDateMatch[1], "ddd, DD MMM YYYY HH:mm:ss ZZ")]
+        postJson['wp:post_date_gmt'] = [getDateInFormat(pubDateMatch[1], "YYYY-MM-DD HH:mm:ss")];
+    }
     postJson['dc:creator'] = [$('meta[name="author"]').attr('content')];
     postJson['content:encoded'] = [await preparePostContent($, urlsMapping)];
     postJson['excerpt:encoded'] = [''];
-    postJson['wp:post_date_gmt'] = [getDateInFormat(pubDateStr, "YYYY-MM-DD HH:mm:ss")];
     postJson['wp:status'] = ['publish'];
     postJson['wp:post_type'] = ['post'];
     postJson.category = prepareCategory($);
