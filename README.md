@@ -33,7 +33,7 @@ npm install
 * `node . -h <your-medium-listing.html>`
 
 ## Features
-* Github Gist using [oembed-gist](https://wordpress.org/plugins/oembed-gist/) plugin
+* Github Gist using [gist-github-shortcode](https://wordpress.org/plugins/gist-github-shortcode/) plugin
 * Figures
 * Caching 
   * Caches the URL output in **downloadedUrls** folder to avoid downloading the same URL again and again.

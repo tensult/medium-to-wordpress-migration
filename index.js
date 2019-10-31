@@ -211,8 +211,24 @@ function removeClassForAllElements(cheerioContainer, element) {
     });
 }
 
-function stringReplaceAt(text, index, replacement) {
-    return text.substr(0, index) + replacement + text.substr(index + replacement.length);
+function replacePlaceHolders(content) {
+    if (!content) {
+        return "";
+    }
+    content = content.replace(/#quotePlaceHolder#/g, '"');
+    return content;
+}
+
+function replacePTags(content) {
+    if (!content) {
+        return "";
+    }
+    content = content.replace(/<p>/g, "\n\n<p>");
+    content = content.replace(/<\/p>/g, "</p>\n\n");
+    content = content.replace(/\n\s+/g, "\n");
+    content = content.replace(/\s+\n/g, "\n");
+    content = content.trim();
+    return content;
 }
 
 function replaceHTags(content) {
@@ -222,7 +238,8 @@ function replaceHTags(content) {
     content = content.replace(/h3\>/g, "h4>");
     content = content.replace(/h2\>/g, "h3>");
     content = content.replace(/h1\>/g, "h2>");
-
+    content = content.replace(/<p>/g, "\n\n<p>");
+    content = content.replace(/<\/p>/g, "</p>\n\n");
     return content;
 }
 
@@ -290,17 +307,14 @@ async function handleIframes(contentObj) {
     }
     const gistHtmls = await fetchUrls(gistUrls);
     contentObj('figure div iframe').each((index, elm) => {
-        const matchedUrl = gistHtmls[index].match(/https:\/\/gist\.github\.com\/[^"]+\/raw\/[^\\]+/g);
+        const matchedUrl = gistHtmls[index].match(/https:\/\/gist\.github[^.]*.com+\/[^\/]+\/([^\/]+)\/raw\/[^\/]+\/([^\\"]+)/);
         if (matchedUrl) {
-            const gistUrl = matchedUrl[0].replace(/\/raw\/[^\/]+\//, ".js?file=");
+            const gistId = matchedUrl[1];
+            const fileName = matchedUrl[2];
             const figureObj = contentObj(elm).closest('figure');
-            figureObj.html(
-                `<div class="oembed-gist">
-                    <script src="${gistUrl}">
-                    </script>
-                    <noscript>
-                    View the code on <a href="${gistUrl.split('.js?')[0]}">Gist</a>.
-                    </noscript></div>`);
+            figureObj.replaceWith(`<!-- wp:shortcode -->
+            [gist id=#quotePlaceHolder#${gistId}#quotePlaceHolder# file=#quotePlaceHolder#${fileName}#quotePlaceHolder#]
+            <!-- /wp:shortcode -->`);
         }
     });
 }
@@ -342,7 +356,9 @@ async function prepareSectionContent(sectionContainer, urlsMapping) {
     handleEmbeddedLinks(contentObj);
     handleLineBreaks(contentObj);
     await handleFigures(contentObj);
-    return replaceHTags(contentObj('body').html());
+    let sectionContent = replaceHTags(contentObj('body').html());
+    sectionContent = replacePlaceHolders(sectionContent);
+    return sectionContent;
 }
 
 async function preparePostContent(postContainer, urlsMapping) {
@@ -356,7 +372,7 @@ async function preparePostContent(postContainer, urlsMapping) {
     const htmlContent = sectionContents
         .join('<hr class="wp-block-separator"/>')
         .replace(/\s+/g, " ");
-    return htmlContent;
+    return replacePTags(htmlContent);
 }
 
 async function prepareWPPostJson(postDataHtml, urlsMapping) {
