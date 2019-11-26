@@ -6,7 +6,7 @@ const path = require('path');
 const xml2js = require('xml2js');
 const moment = require('moment');
 const uuid5 = require('uuid/v5');
-const phantom = require('phantom');
+const puppeteer = require('puppeteer');
 const htmlEntities = require('html-entities').AllHtmlEntities;
 
 const xmlParser = new xml2js.Parser({ cdata: true });
@@ -41,29 +41,29 @@ async function wait(timeInMills) {
 
 // Scrolls the page till new content is available
 async function scrollPage(page) {
-    const currentContentLength = (await page.property('content')).length;
-    await page.evaluate(function () {
-        window.document.body.scrollTop = document.body.scrollHeight;
+    const currentContentLength = (await page.content()).length;
+    await page.evaluate(() => {
+        window.scrollBy(0, document.body.scrollHeight);
     });
     await wait(Math.max(5000, 10000 * Math.random()));
-    const nextContentLength = (await page.property('content')).length;
+    const nextContentLength = (await page.content()).length;
     if (currentContentLength != nextContentLength) {
-        console.log("Scrolling page:", await page.property('url'), "for more content");
+        console.log("Scrolling page:", await page.url(), "for more content");
         await scrollPage(page);
     }
 }
 
 // Scrolls the page and gets the page content using PhantomJS
 async function getPageData(pageUrl, shouldScrollPage) {
-    const instance = await phantom.create();
-    const page = await instance.createPage();
-    await page.open(pageUrl);
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.goto(pageUrl);
     if (shouldScrollPage) {
         await scrollPage(page);
     }
-    const pageContent = await page.property('content');
+    const pageContent = await page.content();
     await page.close();
-    await instance.exit();
+    await browser.close();
     return pageContent;
 };
 
